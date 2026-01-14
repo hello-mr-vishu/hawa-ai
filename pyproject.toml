@@ -8,4 +8,5 @@ dependencies = [
     "google-adk>=1.22.1",
     "ipykernel>=7.1.0",
     "pandas>=2.3.3",
+    "python-dotenv>=1.2.1",
 ]
