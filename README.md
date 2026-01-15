@@ -16,7 +16,7 @@ The system composes multiple specialized agents into a single planner that can i
 - ⚡ **Fast & reproducible Python workflows** using `uv`.
 
 ---
-<img src="assets/3.png" alt="isolated" width="200"/>
+<img src="assets/3.png" alt="isolated" height="700" width="700"/>
 
 
 ### 🧩 Agents & Tools
@@ -50,7 +50,7 @@ The system composes multiple specialized agents into a single planner that can i
 
 ---
 
-<img src="assets/1.png" alt="isolated" height="500" width="500"/>
+<img src="assets/1.png" alt="isolated" height="700" width="700"/>
 
 
 ### 📁 Project Structure
