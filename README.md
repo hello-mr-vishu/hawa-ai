@@ -17,25 +17,6 @@ The system composes multiple specialized agents into a single planner that can i
 
 ---
 
-### 🧠 Architecture Overview
-
-The system is designed as a hierarchy of specialized agents:
-
-```mermaid
-graph TD
-    root[root_agent (travel_planner_main)]
-    inspire[travel_inspiration_agent]
-    news[news_agent (web-grounded search)]
-    places[places_agent (nearby place discovery / OSM)]
-
-    root --> inspire
-    inspire --> news
-    inspire --> places
-```
-
-Each agent is specialized, composable, and independently extensible.
-
----
 
 ### 🧩 Agents & Tools
 
