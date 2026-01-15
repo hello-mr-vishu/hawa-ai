@@ -1,0 +1,84 @@
+# Project Case Study: TravelPlanner
+
+## Project Overview
+The "TravelPlanner" project is an AI-powered application designed to assist users in planning travels and getting quick information. It utilizes the Google ADK (Agent Development Kit) to orchestrate multiple AI agents with specific roles.
+
+## Directory Structure
+- **Root**: `d:\Projects\TravelPlanner`
+- **Agents**:
+    - `my_agent`: A basic example implementation.
+    - `travel_agent`: The core travel planning logic with multiple specialized agents.
+
+---
+
+## Component: `travel_agent`
+This is the primary component of the project, functioning as a comprehensive travel concierge.
+
+### Architecture
+The system is hierarchical, consisting of a main root agent and several specialized supporting agents.
+
+#### 1. Main Agent (`travel_planner_main`)
+- **Role**: Exclusive Travel Concierge.
+- **Goal**: Helps users discover dream holiday destinations and plan vacations.
+- **Capabilities**: Orchestrates the process. It does not use tools directly but relies on sub-agents.
+- **Sub-agents**: `travel_inspiration_agent`.
+- **Model**: `gemini-2.5-flash-lite`.
+
+#### 2. Supporting Agents
+- **`travel_inspiration_agent`**:
+    - **Role**: Inspires users with travel ideas.
+    - **Instruction**: Helps identify destinations and activities. bridging general knowledge queries back to travel suggestions.
+    - **Tools**: Accesses `news_agent` and `places_agent` as tools.
+    
+- **`news_agent`**:
+    - **Role**: Travel news and events specialist.
+    - **Instruction**: Provides top 10 results for events/news based on user queries.
+    - **Underlying Tool**: `google_search_grounding`.
+
+- **`places_agent`**:
+    - **Role**: Location specialist.
+    - **Instruction**: Suggests actual places (limit 10) with names and addresses.
+    - **Underlying Tool**: `location_search_tool`.
+
+### Tools & Capabilities
+- **Google Search Grounding**:
+    - Wraps `google_search` to provide concise, actionable, bullet-pointed answers for tourists.
+- **Location Search Tool**:
+    - **Function**: `find_nearby_places_open`
+    - **Tech Stack**: Uses OpenStreetMap (Nominatim for geocoding, Overpass API for place search).
+    - **Features**: Finds places like restaurants, hospitals, etc., within a radius (default 3km) without requiring an API key.
+
+---
+
+## Component: `my_agent`
+A lightweight, example implementation serving as a starter or test agent.
+
+- **Agent Name**: `root_agent`.
+- **Function**: reports the current time in a specified city.
+- **Tooling**: Uses a mock `get_current_time` function that hardcodes the time to "10:30 AM".
+
+---
+
+## Technical Details
+- **Framework**: Google ADK (Agent Development Kit).
+- **LLM Models**: Configured to use `gemini-2.5-flash-lite`, with support for newer models like `gemini-3-flash-preview`.
+- **Data Storage**: `travel_agent/.adk/session.db` (SQLite database for session management).
+
+---
+
+## Learnings
+- **Tool Grounding is Critical**: The system demonstrates that powerful LLMs still require grounded tools (like `google_search` or `location_search_tool`) to provide accurate, real-time, and actionable information, rather than hallucinating facts.
+- **Model Efficiency**: The project successfully utilizes `gemini-2.5-flash-lite`, indicating that specialized, smaller models can be highly effective for specific agentic tasks when given clear instructions.
+- **Modular Agent Design**: Breaking down the "Travel Concierge" into specialized roles (`inspiration`, `news`, `places`) simplifies the prompt engineering for each agent and makes the system more robust and easier to debug.
+
+## Outcomes
+- **Cost-Effective Architecture**: By leveraging OpenStreetMap's free APIs (Nominatim and Overpass) instead of paid alternatives, the project achieves a sustainable, low-cost location search solution.
+- **Actionable User Responses**: The agents are fine-tuned to return structured, bullet-pointed lists (limit 10), ensuring the output is immediately useful for a traveler rather than being dense text.
+- **No-Code/Low-Code Extensibility**: The structure allows for easy addition of new "specialist" agents (e.g., a "Weather Agent") by simply defining a new class and adding it to the root agent's `sub_agents` list.
+
+## Error Handling
+The project implements robust error handling, particularly in the `location_search_tool`:
+- **Geocoding Validation**: Explicitly checks if a location can be resolved by Nominatim before attempting to search for places (`if not loc:`), preventing cascading null errors.
+- **API Status Checks**: Validates the HTTP status code from the Overpass API (`response.status_code != 200`) to gracefully handle server-side failures.
+- **Empty Result Handling**: Provides clear feedback to the user if no places are found (`if not elements:`), rather than returning an empty list or silence.
+- **Defensive Programming**: Wraps external API calls in a broad `try-except` block to catch unforeseen network issues or parsing errors, ensuring the agent receives a readable error message instead of crashing.
