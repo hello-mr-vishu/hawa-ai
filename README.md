@@ -16,6 +16,7 @@ The system composes multiple specialized agents into a single planner that can i
 - ⚡ **Fast & reproducible Python workflows** using `uv`.
 
 ---
+<img src="assets/3.png" alt="isolated" width="200"/>
 
 
 ### 🧩 Agents & Tools
@@ -48,6 +49,9 @@ The system composes multiple specialized agents into a single planner that can i
 - **python-dotenv**
 
 ---
+
+<img src="assets/1.png" alt="isolated" width="200"/>
+
 
 ### 📁 Project Structure
 
