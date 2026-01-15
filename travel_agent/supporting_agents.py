@@ -1,8 +1,9 @@
 from google.adk.agents import Agent
 from google.adk.tools import AgentTool
-from travel_agent.tools import google_search_grounding
+from travel_agent.tools import google_search_grounding, location_search_tool
 # LLM = "gemini-3-flash-preview"
-LLM = "gemini-2.5-flash"
+# LLM = "gemini-2.5-flash"
+LLM = "gemini-2.5-flash-lite"
 
 
 news_agent = Agent(
@@ -16,17 +17,17 @@ news_agent = Agent(
     tools=[google_search_grounding]    
 )
 
-# places_agent = Agent(
-#     model=LLM,
-#     name="places_agent",
-#     description="Suggests locations based on user preferences",
-#     instruction="""
-#             You are responsible for making suggestions on actual places based on the user's query. Limit the choices to 10 results.
-#             Each place must have a name, location, and address.
-#             You can use the places_tool to find the latitude and longitude of the place and address.
-#         """,
-#     tools=[location_search_tool]    
-# )
+places_agent = Agent(
+    model=LLM,
+    name="places_agent",
+    description="Suggests locations based on user preferences",
+    instruction="""
+            You are responsible for making suggestions on actual places based on the user's query. Limit the choices to 10 results.
+            Each place must have a name, location, and address.
+            You can use the places_tool to find the latitude and longitude of the place and address.
+        """,
+    tools=[location_search_tool]    
+)
 
 travel_inspiration_agent = Agent(
     model=LLM,
@@ -42,5 +43,5 @@ travel_inspiration_agent = Agent(
         - Use `news_agent` to provide key events and news recommendations based on the user's query.
         - Use `places_agent` to provide a list of locations or nearby places to famous locations when user asks for it, for example "find hotels near eiffel tower", should return nearby hotels given some user preferences.
         """,
-    tools=[AgentTool(agent=news_agent)]
+    tools=[AgentTool(agent=news_agent), AgentTool(agent=places_agent)]
 )

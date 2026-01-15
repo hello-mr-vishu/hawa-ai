@@ -3,7 +3,8 @@ from travel_agent.supporting_agents import travel_inspiration_agent
 
 
 # LLM = "gemini-3-flash-preview"
-LLM = "gemini-2.5-flash"
+# LLM = "gemini-2.5-flash"
+LLM = "gemini-2.5-flash-lite"
 root_agent = Agent(
     model=LLM,
     name="travel_planner_main",
