@@ -50,7 +50,7 @@ The system composes multiple specialized agents into a single planner that can i
 
 ---
 
-<img src="assets/1.png" alt="isolated" width="200"/>
+<img src="assets/1.png" alt="isolated" height="500" width="500"/>
 
 
 ### 📁 Project Structure
