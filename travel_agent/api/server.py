@@ -6,15 +6,20 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from travel_agent.api.schemas import HealthResponse, TripRequest, TripResponse
+from travel_agent.api.schemas import (
+    HealthResponse,
+    TokenUsageResponse,
+    TripRequest,
+    TripResponse,
+)
 from travel_agent.core.config import settings
 from travel_agent.core.logging import get_logger
+from travel_agent.core.token_tracker import BudgetExceededError, get_or_create_tracker, get_tracker
 
 logger = get_logger(__name__)
 
 APP_NAME = "hawa-ai"
 
-# Shared session service (in-memory for dev; swap for DatabaseSessionService in prod)
 _session_service = InMemorySessionService()
 _runner: Runner | None = None
 
@@ -22,7 +27,6 @@ _runner: Runner | None = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _runner
-    # Lazy import to avoid circular imports at module load
     from travel_agent.agent import root_agent  # noqa: PLC0415
 
     _runner = Runner(
@@ -48,6 +52,23 @@ async def health():
     return HealthResponse(status="ok", version=settings.app_version)
 
 
+@app.get("/session/{session_id}/usage", response_model=TokenUsageResponse, tags=["ops"])
+async def get_session_usage(session_id: str):
+    tracker = get_tracker(session_id)
+    if not tracker:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Session '{session_id}' not found or has no token usage recorded.",
+        )
+    return TokenUsageResponse(
+        session_id=session_id,
+        total_tokens=tracker.total,
+        budget=tracker.budget,
+        remaining=max(0, tracker.budget - tracker.total),
+        by_agent=tracker.usage_by_agent(),
+    )
+
+
 @app.post("/trip/plan", response_model=TripResponse, tags=["trip"])
 async def plan_trip(req: TripRequest):
     session_id = req.session_id or str(uuid.uuid4())
@@ -67,13 +88,18 @@ async def plan_trip(req: TripRequest):
         parts.append(f"Interests: {req.interests}.")
     query = " ".join(parts)
 
+    # Register a token tracker for this session (idempotent)
+    tracker = get_or_create_tracker(
+        session_id=session_id,
+        budget=settings.max_tokens_per_session,
+    )
+
     logger.info(
         "Trip plan request",
         extra={"extra": {"session_id": session_id, "destination": req.destination}},
     )
 
     try:
-        # Ensure session exists (idempotent)
         try:
             _session_service.create_session(
                 app_name=APP_NAME,
@@ -102,14 +128,27 @@ async def plan_trip(req: TripRequest):
         full_response = "\n\n".join(response_parts) or "No response generated."
         logger.info(
             "Trip plan complete",
-            extra={"extra": {"session_id": session_id, "response_len": len(full_response)}},
+            extra={
+                "extra": {
+                    "session_id": session_id,
+                    "response_len": len(full_response),
+                    "tokens_used": tracker.total,
+                }
+            },
         )
         return TripResponse(
             session_id=session_id,
             destination=req.destination,
             response=full_response,
+            tokens_used=tracker.total,
         )
 
+    except BudgetExceededError as exc:
+        logger.warning(
+            "Token budget exceeded",
+            extra={"extra": {"session_id": session_id, "tokens_used": tracker.total}},
+        )
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
     except Exception as exc:
         logger.error(
             "Trip plan failed",

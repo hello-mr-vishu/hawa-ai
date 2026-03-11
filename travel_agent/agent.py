@@ -1,7 +1,7 @@
 from google.adk.agents import Agent
 
 from travel_agent.core.config import settings
-from travel_agent.supporting_agents import travel_inspiration_agent
+from travel_agent.supporting_agents import _make_token_callback, travel_inspiration_agent
 
 LLM = settings.llm_model
 
@@ -16,4 +16,5 @@ root_agent = Agent(
             - You cannot use any tool directly.
             """,
     sub_agents=[travel_inspiration_agent],
+    after_model_callback=_make_token_callback("travel_planner_main"),
 )
