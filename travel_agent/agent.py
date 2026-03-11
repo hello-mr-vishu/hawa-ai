@@ -1,20 +1,20 @@
-from google.adk.agents import Agent
+from google.adk.agents import SequentialAgent
 
-from travel_agent.core.config import settings
-from travel_agent.supporting_agents import _make_token_callback, travel_inspiration_agent
+from travel_agent.specialized_agents import budget_agent, itinerary_agent, weather_agent
+from travel_agent.supporting_agents import travel_inspiration_agent
 
-LLM = settings.llm_model
-
-root_agent = Agent(
-    model=LLM,
-    name="travel_planner_main",
-    description="A helpful travel planning assistant that helps users plan their trips by providing information and suggestions based on their preferences.",
-    instruction="""
-            - You are an exclusive travel concierge agent
-            - You help users to discover their dream holiday destination and plan their vacation.
-            - Use the inspiration_agent to get the best destination, news, places nearby e.g hotels, cafes, etc near attractions and points of interest for the user.
-            - You cannot use any tool directly.
-            """,
-    sub_agents=[travel_inspiration_agent],
-    after_model_callback=_make_token_callback("travel_planner_main"),
+# Full trip planning pipeline: each step passes its output as context to the next.
+# SequentialAgent guarantees deterministic execution order, unlike LlmAgent routing.
+root_agent = SequentialAgent(
+    name="trip_planner_pipeline",
+    description=(
+        "End-to-end trip planning pipeline: inspires destination, fetches weather, "
+        "builds day-by-day itinerary, and estimates budget."
+    ),
+    sub_agents=[
+        travel_inspiration_agent,  # Step 1: destination inspiration + news + nearby places
+        weather_agent,             # Step 2: climate & packing guide
+        itinerary_agent,           # Step 3: day-by-day itinerary (uses prior context)
+        budget_agent,              # Step 4: cost breakdown
+    ],
 )
