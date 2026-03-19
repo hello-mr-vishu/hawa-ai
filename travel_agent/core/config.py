@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     overpass_timeout: int = 25
     geocode_radius_default: int = 3000
     app_version: str = "1.0.0"
+    session_db_path: str = "travel_agent/.adk/session.db"
+    geocode_cache_ttl: float = 86400.0
+    overpass_cache_ttl: float = 3600.0
+    overpass_max_retries: int = 3
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -1,229 +1,126 @@
-# 🌬️ hawa.ai
+# hawa-ai — Production Multi-Agent Travel Planner
 
-## Multi-Agent AI Travel Planner with Google ADK & Open Geodata
+A production-ready travel planning API built on [Google ADK](https://github.com/google/adk-python) using a multi-agent pipeline.
 
-**hawa.ai** is an experimental multi-agent AI travel concierge that researches destinations, surfaces relevant events and travel news, and discovers nearby places — all orchestrated using the Google Agent Development Kit (ADK) and powered by open geodata.
+## Architecture
 
-The system composes multiple specialized agents into a single planner that can inspire trips, contextualize locations, and generate grounded travel suggestions without relying on paid location APIs.
-
-### ✨ What hawa.ai Can Do
-
-- 🌍 **Suggest destinations & trip ideas** based on user intent.
-- 📰 **Surface travel news & events** using web-grounded search.
-- 📍 **Find nearby places** (hotels, cafes, landmarks) using OpenStreetMap.
-- 🧭 **Geocode & contextualize locations** with free, open tools.
-- 🤖 **Orchestrate multiple agents** via Google ADK.
-- ⚡ **Fast & reproducible Python workflows** using `uv`.
-
----
-<img src="assets/3.png" alt="isolated" height="700" width="700"/>
-
-
-### 🧩 Agents & Tools
-
-#### Agents
-
-| Agent | Description |
-| :--- | :--- |
-| **root_agent** | Entry-point planner that orchestrates other agents. |
-| **travel_inspiration_agent** | Guides destination discovery & inspiration. |
-| **news_agent** | Fetches relevant travel news & events. |
-| **places_agent** | Finds nearby places using OpenStreetMap. |
-
-#### Tools
-
-| Tool | Description |
-| :--- | :--- |
-| **Google Search_grounding** | Web-grounded search wrapper for concise results. |
-| **location_search_tool** | Free nearby place search using Overpass + Nominatim. |
-
----
-
-### 🛠️ Tech Stack
-
-- **Python 3.11+**
-- **Google Agent Development Kit (ADK)**
-- **uv** – Ultra-fast Python package & environment manager
-- **OpenStreetMap** (Overpass + Nominatim)
-- **geopy**
-- **python-dotenv**
-
----
-
-<img src="assets/1.png" alt="isolated" height="700" width="700"/>
-
-
-### 📁 Project Structure
-
-```text
-hawa-ai/
-├── main.py
-├── pyproject.toml
-├── README.md
-└── travel_planner/
-    ├── agent.py
-    ├── supporting_agents.py
-    ├── tools.py
-    └── __pycache__/   # ignored
+```
+POST /trips/plan  ──► trip_planner_pipeline (SequentialAgent)
+                          │
+                          ├─► travel_inspiration_agent  (destination + news + places)
+                          │       ├─► news_agent         (Google Search)
+                          │       └─► places_agent       (OpenStreetMap / Overpass)
+                          │
+                          ├─► weather_agent              (climate & packing guide)
+                          ├─► itinerary_agent            (day-by-day plan)
+                          └─► budget_agent               (cost breakdown table)
 ```
 
----
+All agents share session history via ADK's `SqliteSessionService`, enabling multi-turn conversation.
 
-### ⚙️ Prerequisites
-
-- Python 3.11+
-- macOS / Linux (Windows users: WSL recommended)
-- A Google API key (for ADK models/tools)
-
----
-
-### 🚀 Setup (Using uv)
-
-#### 1️⃣ Install uv
-
-**macOS:**
-```bash
-brew install uv
-```
-
-**Universal:**
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-#### 2️⃣ Create & activate virtual environment
+## Quickstart
 
 ```bash
-uv venv .venv
-source .venv/bin/activate
-# Windows: .venv\Scripts\activate
-```
-
-#### 3️⃣ Install dependencies
-
-```bash
-uv sync
-```
-
-To add dependencies later:
-```bash
-uv add package_name
-```
-
----
-
-### 🔐 Environment Variables
-
-Create a `.env` file in the project root:
-
-```ini
-GOOGLE_API_KEY=your_api_key_here
-```
-
-The project uses `python-dotenv` to load environment variables automatically.
-
----
-
-### ▶️ Running the Project
-
-#### Simple sanity check
-```bash
-uv run python main.py
-```
-
-#### Using the root agent directly
-
-```python
-from travel_planner.agent import root_agent
-
-query = "Family-friendly summer trip in Europe near beaches"
-response = root_agent.run(query)
-print(response)
-```
-
-#### Using the inspiration agent explicitly
-
-```python
-from travel_planner.supporting_agents import travel_inspiration_agent
-
-travel_inspiration_agent.run(
-    "Find boutique hotels near the Eiffel Tower"
-)
-```
-
----
-
-### 🧪 Example Use Cases
-
-- “Weekend trip ideas near Bangalore”
-- “Cafes and landmarks near Times Square”
-- “Family-friendly summer destinations in Europe”
-- “Travel events happening in Japan this month”
-
----
-
-### 🧱 Extending hawa.ai
-
-Ideas for future improvements:
-
-- 💰 **Budget & cost estimation agent**
-- 🗺️ **Itinerary export** (JSON / Markdown / PDF)
-- ⚡ **Caching layer** for geocoding & Overpass queries
-- ⏱️ **Rate-limiting & retry/backoff** for Overpass
-- 🌐 **Frontend UI** or chat interface
-
----
-
-### ⚠️ Error Handling & Edge Cases
-
-| Scenario | Behavior |
-| :--- | :--- |
-| **Missing geocode results** | Returns helpful message. |
-| **Overpass throttling** | Graceful failure (retry recommended). |
-| **Empty user queries** | Input validation advised. |
-
----
-
-### 🧑‍💻 Development Cheatsheet
-
-```bash
-# Add dependency
-uv add rich
-
-# Sync dependencies
+# 1. Clone and install
+git clone <repo-url>
+cd hawa-ai
 uv sync
 
-# Run a module
-uv run python -m travel_planner.agent
+# 2. Set environment variables
+cp .env.example .env   # add your GOOGLE_API_KEY
 
-# Export requirements
-uv export --format requirements-txt > requirements.txt
+# 3. Run
+uv run uvicorn travel_agent.api.server:app --port 8000 --reload
 ```
 
----
+## API Reference
 
-### 📌 Why This Project Matters
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/ready` | Readiness probe (checks DB) |
+| POST | `/trips/plan` | Structured trip planning with preferences |
+| POST | `/trips/chat` | Multi-turn chat (reuse `session_id`) |
+| POST | `/trip/plan` | Legacy trip planning endpoint |
+| GET | `/trips/sessions/{user_id}` | List sessions for a user |
+| GET | `/session/{session_id}/usage` | Token usage breakdown by agent |
+| GET | `/users/{user_id}/preferences` | Get saved user preferences |
+| PUT | `/users/{user_id}/preferences` | Set a user preference |
+| DELETE | `/users/{user_id}/preferences/{key}` | Delete a user preference |
 
-This project demonstrates:
-- Agentic AI design
-- Multi-agent orchestration
-- Grounded search
-- Open data usage
-- Production-grade Python tooling
+### Example: Plan a trip
 
-It is designed as both a learning project and a portfolio-ready system.
+```bash
+curl -X POST http://localhost:8000/trips/plan \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "alice",
+    "destination": "Kyoto",
+    "start_date": "2026-10-01",
+    "end_date": "2026-10-08",
+    "interests": ["temples", "food"],
+    "travel_style": "mid"
+  }'
+```
 
----
+### Example: Multi-turn conversation
 
-### 📄 License
+```bash
+# First turn — get session_id from response
+SESSION=$(curl -s -X POST http://localhost:8000/trips/chat \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"alice","message":"Plan a 5-day trip to Tokyo."}' | jq -r .session_id)
 
-MIT License — free to use, modify, and distribute.
+# Follow-up turn
+curl -X POST http://localhost:8000/trips/chat \
+  -H "Content-Type: application/json" \
+  -d "{\"user_id\":\"alice\",\"session_id\":\"$SESSION\",\"message\":\"Change day 3 to include more shopping.\"}"
+```
 
-### 🙌 Acknowledgements
+### Example: Save preferences
 
-- Google Agent Development Kit (ADK)
-- OpenStreetMap contributors
-- Overpass API & Nominatim
-- Astral’s uv
+```bash
+curl -X PUT http://localhost:8000/users/alice/preferences \
+  -H "Content-Type: application/json" \
+  -d '{"key":"dietary","value":"vegetarian"}'
+```
 
-> *hawa.ai is intentionally lightweight, modular, and extensible — designed to explore how multi-agent systems can power real-world applications like travel planning. If you find this useful, ⭐ the repo and feel free to contribute!*
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GOOGLE_API_KEY` | — | Required. Gemini API key |
+| `GOOGLE_GENAI_USE_VERTEXAI` | `0` | Use Vertex AI instead of API key |
+| `LLM_MODEL` | `gemini-2.5-flash-lite` | Model name |
+| `MAX_TOKENS_PER_SESSION` | `50000` | Token budget per session |
+| `SESSION_DB_PATH` | `travel_agent/.adk/session.db` | SQLite database path |
+| `LOG_FORMAT` | `json` | `json` or `text` |
+| `APP_VERSION` | `1.0.0` | Reported in `/health` |
+
+## Docker Deployment
+
+```bash
+# Build and start
+GOOGLE_API_KEY=your_key docker compose up --build
+
+# Health check
+curl http://localhost:8000/health
+
+# Restart with persistent sessions
+docker compose down && docker compose up
+```
+
+Sessions and user preferences are persisted in the `travel_data` Docker volume. Sessions survive container restarts.
+
+## Running Tests
+
+```bash
+# Unit tests (no API key required)
+uv run pytest tests/unit/ -v
+
+# With coverage
+uv run pytest tests/unit/ --cov=travel_agent --cov-report=term
+
+# Integration tests (requires GOOGLE_API_KEY)
+GOOGLE_API_KEY=your_key uv run pytest tests/integration/ -v
+```

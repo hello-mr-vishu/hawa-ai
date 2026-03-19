@@ -1,7 +1,7 @@
 [project]
 name = "travelplanner"
 version = "0.1.0"
-description = "Add your description here"
+description = "Production multi-agent travel planning API powered by Google ADK"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -10,4 +10,17 @@ dependencies = [
     "ipykernel>=7.1.0",
     "pandas>=2.3.3",
     "python-dotenv>=1.2.1",
+    "tenacity>=9.0",
+]
+
+[project.scripts]
+hawa-travel = "main:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "httpx>=0.28",
+    "anyio>=4.12.1",
 ]

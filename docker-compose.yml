@@ -1,0 +1,22 @@
+services:
+  travel-api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - travel_data:/app/data
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_GENAI_USE_VERTEXAI=0
+      - LOG_FORMAT=json
+      - MAX_TOKENS_PER_SESSION=50000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  travel_data:
